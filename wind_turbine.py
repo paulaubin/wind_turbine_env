@@ -40,45 +40,45 @@ class Wind:
 	__c_heading_factor = 0.005 		# variable used in the OU model
 	__speed_target = 0.0 			# m/s, represents the average wind speed on some minutes
 	__heading_target = 0.0 			# deg, represents the average wind angle on some minutes
-	__heading_target_diff = 0.0 	# deg, represents the angle diff between current heading and heading target
 
 	def __init__(self, initial_speed=None, initial_heading=None, model_type='OU'):
 		''' heading is the wind angle wrt Northin degree
-			speed is in m/s and positive
+			speed is in m/s. A negative speed would result in a 180° shift in heading
 			model_type represents the model used to simulate the wind, the 'OU'
 			model is the one selected by default and corresponds to the 
 			Ornstein-Uhlenbeck model
 		'''
-		self.speed = 0 if initial_speed is None else np.max([initial_speed, 0.0])
-		self.heading = 0 if initial_heading is None else np.mod(initial_heading, 360)
+		self._speed = 0 if initial_speed is None else initial_speed
+		self._heading = 0 if initial_heading is None else initial_heading
 		self.model_type = model_type
 
 		# Initialise hidden variables. The heading and speed target corresponds to the
 		# average on which the OU process must tend. They vary slowly whereas the OU
 		# process accounts for fast variations such as gusts
-		self.__speed_target = self.speed
-		self.__heading_target = self.heading
+		self.__speed_target = self._speed
+		self.__heading_target = self._heading
 
 	def step(self, step_duration=1, model='OU'):
 		'''
 		step_duration must be an int
 		'''
 		if self.model == 'OU':
-			mean_sp = self.speed
-			mean_heading_target_diff = self.heading - self.__heading_target_diff
+			mean_sp = self._speed
+			mean_hd = self._heading
 			steps = 1
 			for i in range(int(np.ceil(step_duration/self.__dt))):
+				# Compute fast chaning wind at 1/dt frequency, typically 1Hz
 				self.ou()
 				steps += 1
-				mean_sp += (self.speed - mean_sp)/steps
-				mean_heading_target_diff += wrap_to_m180_p180((self.heading - mean_heading_target_diff)/steps)
+				mean_sp += (self._speed - mean_sp)/steps
+				mean_hd += (self._heading - mean_hd)/steps
 				if i % step_duration == 1:
 					# Flush new value
-					self.speed = mean_sp
-					self.heading = mean_heading_target_diff + self.__heading_target_diff
+					self._speed = mean_sp
+					self._heading = mean_hd
 					# Reset incremental mean
-					mean_sp = self.speed
-					mean_heading_target_diff = self.heading - self.__heading_target_diff
+					mean_sp = self._speed
+					mean_hd = self._heading
 					steps = 1
 		else:
 			print('Wind model not found in class ', str(self.__class__))
@@ -91,18 +91,28 @@ class Wind:
 		c_speed = self.__c_speed_factor * self.__speed_target
 		# The random distribution variance is chosen such that wind gust can reach 40% of the average wind. Support for random walk and normal distribution
 		# is available here : https://en.wikipedia.org/wiki/Random_walk#:~:text=A%20random%20walk%20having%20a,walk%20as%20an%20underlying%20assumption
-		self.speed = np.max([c_speed + (1 - self.__c_speed_factor) * self.speed + np.random.normal(0.0, 0.1 * self.__speed_target), 0.0])	
+		self._speed = c_speed + (1 - self.__c_speed_factor) * self._speed + np.random.normal(0.0, 0.1 * np.abs(self.__speed_target))
 
-		self.__heading_target_diff = wrap_to_m180_p180(0 + (1 - self.__c_heading_factor) * self.__heading_target_diff + np.random.normal(0.0, 0.3))
-		self.heading = np.mod(self.__heading_target_diff + self.__heading_target, 360) 	# This is not quite a Ornstein-Uhlenbeck process, but it should work for small c
+		c_heading = self.__c_heading_factor * self.__heading_target
+		self._heading = c_heading + (1 - self.__c_heading_factor) * self._heading + np.random.normal(0.0, 0.3)
 
+	@property
+	def heading(self):
+		print('inside heading getter')
+		if self._speed < 0:
+			return np.mod(self._heading + 180, 360)
+		else:
+			return np.mod(self._heading, 360)
+	@property
+	def speed(self):
+		return np.abs(self._speed)
+	
 	def __str__(self):
 		return str(self.__class__) + ": " + str(self.__dict__)
 		
 
-w1 = Wind(10, 0, 'OU')
+w1 = Wind(-10, 90, 'OU')
 w2 = w1
-print(w1)
 
 time1 = np.linspace(0, 3600, 3601)
 w1_sp_log = np.zeros((np.size(time1), 1))

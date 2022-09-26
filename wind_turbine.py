@@ -35,11 +35,13 @@ class Wind_turbine:
 class Wind:
 	model = 'OU' 					# model used for wind simulation
 	__c_speed_factor = 0.2 			# variable used in the OU model
+	__speed_noise = 0.1 			# variable used in the OU model
 	__c_heading_factor = 0.005 		# variable used in the OU model
+	__heading_noise = 0.3 			# variable used in the OU model
 	__speed_target = 0.0 			# m/s, represents the average wind speed on some minutes
 	__heading_target = 0.0 			# deg, represents the average wind angle on some minutes
 	__diurnal_period = 24*3600 		# s, represents the period of the diurnal cycle
-	__diurnal_speed_factor = 0.2 	# represents the wind speed loss on a diurnal cycle
+	__diurnal_factor = 0.2 			# represents the wind speed elliptical coefficient on a diurnal cycle
 	__time = 0 						# s, represent the elapsed time in s due to the cumulative steps
 
 	def __init__(self, initial_speed=None, initial_heading=None, step_duration=None, model_type='OU'):
@@ -57,13 +59,18 @@ class Wind:
 		# Initialise hidden variables. The heading and speed target corresponds to the
 		# average on which the OU process must tend. They vary slowly whereas the OU
 		# process accounts for fast variations such as gusts
-		self.__speed_target = self._speed
-		self.__heading_target = self._heading
+		self.__speed_init = self._speed
+		self.__heading_init = self._heading
 
 	def step(self, model='OU'):
 		'''
 		step_duration must be an int
 		'''
+		# Increment time and compute long term speed and heading duration
+		self.__time += self.__step_duration
+		self.__diurnal_cycle()
+
+		# Compute short term variations
 		if self.model == 'OU':
 			mean_sp = self._speed
 			mean_hd = self._heading
@@ -93,21 +100,24 @@ class Wind:
 		c_speed = self.__c_speed_factor * self.__speed_target
 		# The random distribution variance is chosen such that wind gust can reach 40% of the average wind. Support for random walk and normal distribution
 		# is available here : https://en.wikipedia.org/wiki/Random_walk#:~:text=A%20random%20walk%20having%20a,walk%20as%20an%20underlying%20assumption
-		self._speed = c_speed + (1 - self.__c_speed_factor) * self._speed + np.random.normal(0.0, 0.1 * np.abs(self.__speed_target))
+		self._speed = c_speed + (1 - self.__c_speed_factor) * self._speed + np.random.normal(0.0, self.__speed_noise * np.abs(self.__speed_target))
 
 		c_heading = self.__c_heading_factor * self.__heading_target
-		self._heading = c_heading + (1 - self.__c_heading_factor) * self._heading + np.random.normal(0.0, 0.3)
+		self._heading = c_heading + (1 - self.__c_heading_factor) * self._heading + np.random.normal(0.0, self.__heading_noise)
 
 	def __diurnal_cycle(self):
 		'''
-		The diurnal cycles is modelised as a periodic day-night shift of the wind speed
+		The diurnal cycles is modelised as an elliptic day-night shift of the wind : https://en.wikipedia.org/wiki/Ellipse 
 		'''
-		pass
+		u = np.tan((2 * np.pi * self.__time / self.__diurnal_period) / 2)
+		x = (1 - u**2)/(1 + u**2)
+		y = self.__diurnal_factor * (2*u) / (1 + u**2)
+		self.__speed_target = np.sqrt(x**2 + y**2) * self.__speed_init
+		self.__heading_target = np.arctan2(x, y) * 180/np.pi - 90 + self.__heading_init
 		
 
 	@property
 	def heading(self):
-		print('inside heading getter')
 		if self._speed < 0:
 			return np.mod(self._heading + 180, 360)
 		else:
@@ -123,7 +133,7 @@ class Wind:
 w1 = Wind(10, 0, 1, 'OU')
 w2 = Wind(10, 0, 10, 'OU')
 
-time1 = np.linspace(0, 3600, 3601)
+time1 = np.linspace(0, 24*3600, 24*3601)
 w1_sp_log = np.zeros((np.size(time1), 1))
 w1_h_log = np.zeros((np.size(time1), 1))
 for t in range(len(time1)) :
@@ -131,7 +141,7 @@ for t in range(len(time1)) :
 	w1_h_log[t] = w1.heading
 	w1.step()
 
-time2 = np.linspace(0, 3600, 361)
+time2 = np.linspace(0, 24*3600, 24*361)
 w2_sp_log = np.zeros((np.size(time2), 1))
 w2_h_log = np.zeros((np.size(time2), 1))
 for t in range(len(time2)) :

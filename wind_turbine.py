@@ -44,16 +44,21 @@ class Wind:
 	__diurnal_factor = 0.2 			# represents the wind speed elliptical coefficient on a diurnal cycle
 	__time = 0 						# s, represent the elapsed time in s due to the cumulative steps
 
-	def __init__(self, initial_speed=None, initial_heading=None, step_duration=None, model_type='OU'):
-		''' heading is the wind angle wrt Northin degree
-			speed is in m/s. A negative speed would result in a 180° shift in heading
-			model_type represents the model used to simulate the wind, the 'OU'
-			model is the one selected by default and corresponds to the 
-			Ornstein-Uhlenbeck model
+	def __init__(self, initial_speed=None, initial_heading=None, step_duration=None, time_of_the_day=None, model_type='OU'):
+		''' 
+		Inputs :
+			heading 		- [deg] The wind angle wrt Northin degree
+			speed 			- [m/s] A negative speed would result in a 180° shift in heading
+			step_duration 	- [s] 	The duration of a time step. It should be higher or equal to 1s
+			time_of_the_day - [s]	For instance 7H30AM is 7*3600 + 30*60. By default it is set to midnight
+			model_type		- [] 	The model used to simulate the wind, the 'OU'
+									model is the one selected by default and corresponds to the 
+									Ornstein-Uhlenbeck model
 		'''
 		self._speed = 0 if initial_speed is None else initial_speed
 		self._heading = 0 if initial_heading is None else initial_heading
 		self.__step_duration = self.__dt if step_duration is None else step_duration
+		self.__time = 0 if time_of_the_day is None else time_of_the_day
 		self.model_type = model_type
 
 		# Initialise hidden variables. The heading and speed target corresponds to the
@@ -113,7 +118,7 @@ class Wind:
 		x = (1 - u**2)/(1 + u**2)
 		y = self.__diurnal_factor * (2*u) / (1 + u**2)
 		self.__speed_target = np.sqrt(x**2 + y**2) * self.__speed_init
-		self.__heading_target = np.arctan2(x, y) * 180/np.pi - 90 + self.__heading_init
+		self.__heading_target = np.mod(np.arctan2(y, x) * 180/np.pi, 360) + self.__heading_init
 		
 
 	@property
@@ -130,8 +135,8 @@ class Wind:
 		return str(self.__class__) + ": " + str(self.__dict__)
 		
 
-w1 = Wind(10, 0, 1, 'OU')
-w2 = Wind(10, 0, 10, 'OU')
+w1 = Wind(10, 0, 1, 0,  'OU')
+w2 = Wind(10, 0, 10, 6*3600, 'OU')
 
 time1 = np.linspace(0, 24*3600, 24*3601)
 w1_sp_log = np.zeros((np.size(time1), 1))

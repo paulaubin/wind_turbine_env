@@ -31,7 +31,8 @@ class Wind_turbine:
 			print('wind turbine command ', direction, ' not valid')
 			self.control_on = False
 
-# Model of the wind
+# Model of the wind. It simulates the wind with a short term gaussian noise and a long term (24h period)
+# variation of the wind and the heading due to diurnal cycles
 class Wind:
 	model = 'OU' 					# model used for wind simulation
 	__c_speed_factor = 0.2 			# variable used in the OU model
@@ -54,6 +55,10 @@ class Wind:
 			model_type		- [] 	The model used to simulate the wind, the 'OU'
 									model is the one selected by default and corresponds to the 
 									Ornstein-Uhlenbeck model
+
+		Outputs :
+			heading 		- [deg]
+			speed 			- [m/s]
 		'''
 		self._speed = 0 if initial_speed is None else initial_speed
 		self._heading = 0 if initial_heading is None else initial_heading

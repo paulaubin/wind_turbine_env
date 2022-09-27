@@ -8,28 +8,92 @@
 # ---------------------------------------------------------------------------
 
 import numpy as np
-import matplotlib.pyplot as plt
 from math_utils import wrap_to_m180_p180
 
 class Wind_turbine:
-	def __init__(self):
-		pass
+	name = 'V80/2000'
+	manufacturer = 'Vestas'
+	rated_power = 2 							# MW
+	rotor_diameter = 80 						# m 
+	nb_blades = 3
+	power_control = 'pitch'
+	min_rotor_speed = 9 						# rd/min
+	max_rotor_speed = 19 						# rd/min
+	cut_in_wind_speed = 3.5 					# m/s
+	cut_off_wind_speed = 25 					# m/s
+	min_hub_height = 60 						# m
+	max_hub_height = 100 						# m
+	# other public details here : https://www.thewindpower.net/turbine_en_30_vestas_v80-2000.php
 
-	def rotate(self, direction):
+	__power_curve = [[0, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5,  5., 5.5,  6., 6.5,  7., 7.5,  8., 8.5,  9.,  9.5, 10. , 10.5, 11. , 11.5, 12. , 12.5, 13. , 13.5, 14. , 14.5, 15. , 15.5, 16. , 16.5, 17. , 17.5, 18. , 18.5, 19. , 19.5, 20. , 20.5, 21. , 21.5, 22. , 22.5, 23. , 23.5, 24. , 24.5, 25. ], \
+					 [0,   0, 0,    0,  0,   0,  0,  35, 70, 117, 165, 225, 285, 372, 459, 580, 701, 832, 964, 1127, 1289, 1428, 1567, 1678, 1788, 1865, 1941, 1966, 1990, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000]]
+	__yaw_cut_off = 40 							# deg, the maximum yaw relative to the wind that the structure can handle
+	__yaw_control_step = 1 						# deg
+	__yaw_control_cost = 1e-2 * rated_power 	# MW
+	__control_on = False
+
+	def __init__(self, initial_heading=None):
+		''' 
+		Inputs :
+			heading 		- [deg] The wind angle wrt Northin degree
+
+		Outputs :
+			power_output 	- [MW]
+		'''
+		self._heading = 0 if initial_heading is None else initial_heading
+
+	def __power_output(self, wind_speed:float, wind_heading:float) -> float :
+		'''
+		The output power of the wind turbine in MW
+		'''
+		facing_wind_power_output = np.interp(wind_speed, self.__power_curve[0], self.__power_curve[1])/1e3
+		wraped_wt_heading = wrap_to_m180_p180(self._heading)
+		wraped_wind_heading = wrap_to_m180_p180(wind_heading)
+		rel_wind_angle = wraped_wind_heading - wraped_wt_heading
+		if np.abs(rel_wind_angle) > self.__yaw_cut_off:
+			return 0
+		else:
+			return np.cos(rel_wind_angle * np.pi/180) * facing_wind_power_output
+
+	def __rotate(self, direction):
 		if direction == -1 :
 			# rotate trigo
-			self.wind_rel_heading_hist[-1] -= self.angle_increment
-			self.control_on = True
+			self._heading -= self.__yaw_control_step
+			self.__control_on = True
 		if direction == +1 :
 			# rotate clockwise
-			self.wind_rel_heading_hist[-1] += self.angle_increment
-			self.control_on = True
+			self._heading += self.__yaw_control_step
+			self.__control_on = True
 		if direction == 0 :
 			# stays in place
-			self.control_on = False
+			self.__control_on = False
 		if direction != -1 and direction != +1 and direction != 0 :
 			print('wind turbine command ', direction, ' not valid')
-			self.control_on = False
+			self.__control_on = False
+
+	def step(self, wind_speed:float, wind_heading:float, action:int) -> float:
+		'''
+		Takes an action and then returns the output power
+		Inputs :
+			actions - {0, 1, 2}, 0 is rotate trigo, 1 is 'do nothing', 2 is rotate clockwise
+		'''
+		self.__rotate(action-1)
+		power_output = self.__power_output(wind_speed, wind_heading)
+		if self.__control_on:
+			power_output -= self.__yaw_control_cost
+		return power_output
+
+	@property
+	def heading(self):
+		if self._speed < 0:
+			return np.mod(self._heading + 180, 360)
+		else:
+			return np.mod(self._heading, 360)
+
+	def __str__(self):
+		return str(self.__class__) + ": " + str(self.__dict__)
+
+
 
 # Model of the wind. It simulates the wind with a short term gaussian noise and a long term (24h period)
 # variation of the wind and the heading due to diurnal cycles
@@ -139,44 +203,3 @@ class Wind:
 	def __str__(self):
 		return str(self.__class__) + ": " + str(self.__dict__)
 		
-
-w1 = Wind(10, 0, 1, 0,  'OU')
-w2 = Wind(10, 0, 10, 6*3600, 'OU')
-
-time1 = np.linspace(0, 24*3600, 24*3601)
-w1_sp_log = np.zeros((np.size(time1), 1))
-w1_h_log = np.zeros((np.size(time1), 1))
-for t in range(len(time1)) :
-	w1_sp_log[t] = w1.speed
-	w1_h_log[t] = w1.heading
-	w1.step()
-
-time2 = np.linspace(0, 24*3600, 24*361)
-w2_sp_log = np.zeros((np.size(time2), 1))
-w2_h_log = np.zeros((np.size(time2), 1))
-for t in range(len(time2)) :
-	w2_sp_log[t] = w2.speed
-	w2_h_log[t] = w2.heading
-	w2.step()
-
-print('mean speed 1= ', np.mean(w1_sp_log))
-print('std speed 1= ', np.std(w1_sp_log))
-print('mean heading 1= ', np.mean(w1_h_log))
-print('std heading 1= ', np.std(w1_h_log))
-
-print('mean speed 2= ', np.mean(w2_sp_log))
-print('std speed 2= ', np.std(w2_sp_log))
-print('mean heading 2= ', np.mean(w2_h_log))
-print('std heading 2= ', np.std(w2_h_log))
-
-fig, axs = plt.subplots(2, sharex=True)
-axs[0].plot(time1, w1_sp_log, label='step = 1')
-axs[0].plot(time2, w2_sp_log, label='step = 10')
-axs[0].set(xlabel = 'Time (s)', ylabel='Speed (m/s)')
-axs[0].grid()
-axs[1].plot(time1, w1_h_log, label='step = 1')
-axs[1].plot(time2, w2_h_log, label='step = 10')
-axs[1].set(xlabel = 'Time (s)', ylabel='Heading (°)')
-axs[1].grid()
-fig.set_size_inches(14, 8)
-plt.show()

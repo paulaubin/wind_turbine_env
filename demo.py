@@ -30,6 +30,7 @@ sm.run_simu()
 power_output = sm.power_output_log
 actions = sm.action_log
 rel_wind = sm.rel_wind_heading_log
+true_rel_wind = sm.true_rel_wind_heading_log
 
 # Plot the result
 ax1 = plt.subplot(311)
@@ -38,11 +39,13 @@ ax1.grid()
 ax1.set_ylabel('Power output (MW)')
 
 ax2 = plt.subplot(312, sharex=ax1)
-ax2.plot(rel_wind)
+ax2.plot(rel_wind, label='Estimated relative wind angle (°)')
+ax2.plot(true_rel_wind, label='True relative wind angle (°)')
 ax2.grid()
 ax2.set_xlabel('Steps')
 ax2.set_ylabel('Relative wind without sensor error(°)')
-ax2.set_ylim((-50, 50))
+ax2.set_ylim((-30, 30))
+ax2.legend()
 
 ax3 = plt.subplot(313, sharex=ax1)
 ax3.plot(actions)

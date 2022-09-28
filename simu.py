@@ -12,7 +12,6 @@ from wind_turbine import Wind_turbine, Wind
 
 class Basic_agent:
 	__threshold = 5 					# deg, corresponds to the wind deadzone in which no action is taken
-	__heading_sensor_offset = -3		# deg, it corresponds to the bias of the anemometer
 
 	def __init__(self):
 		pass
@@ -23,7 +22,7 @@ class Basic_agent:
 		Input  : relative wind heading between the wind and the wind turbine.
 		Ouptut : an int corresponding to the selected action : 0 rotate clockwise, 1 do nothgin, 2 rotate trigo
 		'''
-		rel_wind_heading = wrap_to_m180_p180(rel_wind_heading + self.__heading_sensor_offset)
+		rel_wind_heading = wrap_to_m180_p180(rel_wind_heading)
 		# If the relative angle to the wind is low do nothing
 		if np.abs(rel_wind_heading) - self.__threshold < 0:
 			return 1
@@ -35,9 +34,10 @@ class Basic_agent:
 		return str(self.__class__) + ": " + str(self.__dict__)
 
 class Simu:
-	power_output_log = [] 		# MW
+	power_output_log = [] 			# MW
 	action_log = []
-	rel_wind_heading_log = []	# deg
+	rel_wind_heading_log = []		# deg
+	true_rel_wind_heading_log = [] 	# deg
 	step_count = 0
 
 	def __init__(self, agent=None, wind_model=None, wind_turbine_model=None, max_steps=None):
@@ -48,10 +48,18 @@ class Simu:
 		self.power_output_log = self.max_steps * [0]
 		self.action_log = self.max_steps * [1]
 		self.rel_wind_heading_log = self.max_steps * [0]
+		self.true_rel_wind_heading_log = self.max_steps * [0]
 
 	def step(self):
-		# Log the wind
+		# Log the estimated wind
 		self.rel_wind_heading_log[self.step_count] = wrap_to_m180_p180(self.wd.heading - self.wt.heading)
+
+		# Log the true wind
+		self.true_rel_wind_heading_log[self.step_count] = wrap_to_m180_p180(self.wd.heading - self.wt.true_heading)
+		if np.abs(self.true_rel_wind_heading_log[self.step_count]) > 10:
+			print('self.true_rel_wind_heading_log[self.step_count]) = ', self.true_rel_wind_heading_log[self.step_count])
+			print('self.wd.heading = ', self.wd.heading)
+			print('self.wt.true_heading = ', self.wt.true_heading)
 
 		# Get action
 		self.action_log[self.step_count] = self.agent.policy(self.rel_wind_heading_log[self.step_count])

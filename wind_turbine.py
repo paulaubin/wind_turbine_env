@@ -36,6 +36,7 @@ class Wind_turbine:
 	__yaw_control_step = 1 										# deg
 	__yaw_control_cost = 1e-2 * rated_power 					# MW
 	__control_on = False
+	__heading_sensor_bias = -3									# deg
 
 	# Dynamics data
 	__rotor_cutoff = 1/60										# Hz
@@ -45,16 +46,17 @@ class Wind_turbine:
 	__power_hist_filt = []  									# MW
 	__power_hist = []  											# MW
 
-	def __init__(self, initial_heading=None, has_inertia=None):
+	def __init__(self, initial_estimated_heading=None, has_inertia=None):
 		''' 
 		Inputs :
-			heading 		- [deg] The wind angle wrt Northin degree
-			has_inertia 	- [bool] Determines whether the output power will be filtered
+			initial_estimated_heading 		- [deg] The estimated heading = true heading + sensor bias wrt North in degree
+			has_inertia 					- [bool] Determines whether the output power will be filtered
 
 		Outputs :
-			power_output 	- [MW]
+			power_output 					- [MW]
 		'''
-		self._heading = 0 if initial_heading is None else initial_heading
+		self._heading = -self.__heading_sensor_bias if initial_estimated_heading is None \
+			else initial_estimated_heading - self.__heading_sensor_bias
 		self._has_inertia = False if has_inertia is None else has_inertia
 
 	def __power_output(self, wind_speed:float, wind_heading:float) -> float :
@@ -118,7 +120,11 @@ class Wind_turbine:
 		return power_output
 
 	@property
-	def heading(self):
+	def heading(self): 	# corresponds to the estimated heading
+		return np.mod(self._heading + self.__heading_sensor_bias, 360)
+
+	@property
+	def true_heading(self): 	# corresponds to the true heading
 		return np.mod(self._heading, 360)
 
 	def __str__(self):

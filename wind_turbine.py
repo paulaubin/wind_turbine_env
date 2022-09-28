@@ -42,8 +42,8 @@ class Wind_turbine:
 	__filter_order = 1
 	__b, __a = butter_lowpass(__rotor_cutoff, 1.0, __filter_order)
 	__zi = lfilter_zi(__b, __a)
-	__power_hist_filt = []  				# MW
-	__power_hist = []  					# MW
+	__power_hist_filt = []  									# MW
+	__power_hist = []  											# MW
 
 	def __init__(self, initial_heading=None, has_inertia=None):
 		''' 
@@ -167,7 +167,7 @@ class Wind:
 		self.__speed_init = self._speed
 		self.__heading_init = self._heading
 
-	def step(self, model='OU'):
+	def step(self):
 		'''
 		step_duration must be an int
 		'''

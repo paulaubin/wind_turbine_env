@@ -9,7 +9,7 @@
 
 import numpy as np
 from math_utils import wrap_to_m180_p180
-from butterworth_low_pass_filter_template import butter_lowpass, manual_filter
+from filters import butter_lowpass, manual_filter
 from scipy.signal import lfilter_zi
 from queue import Queue
 

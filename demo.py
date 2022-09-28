@@ -10,27 +10,27 @@ from wind_turbine import Wind_turbine, Wind
 from simu import Basic_agent, Simu
 import matplotlib.pyplot as plt
 
-# Set up a wind with 10m/s speed, at 270° from the North, 1s time step,
+# Initialize a wind instance with 10m/s speed, at 270° from the North, 1s time step,
 # at 8AM in the morning and with the Ornstein-Uhlenbeck model
 wd = Wind(10, 270, 1, 8*3600, 'OU')
 
-# Set up a wind turbine at 350° of heading angle with inertia enabled
+# Initialize a wind turbine instance at 350° of heading angle with inertia enabled
 wt = Wind_turbine(350, True)
 
-# Set up an agent that will give the policy
+# Initialize an agent instance that will give the policy
 ba = Basic_agent()
 
-# Set up a simulation that lasts 1 day
+# Set up a simulation that runs for 1 day
 sm = Simu(ba, wd, wt, 24*3600)
 
 # Run the simulation
 sm.run_simu()
 
-# Get the log from the simulation
-power_output = sm.power_output_log
-actions = sm.action_log
-rel_wind = sm.rel_wind_heading_log
-true_rel_wind = sm.true_rel_wind_heading_log
+# Get the logs from the simulation
+power_output = sm.power_output_log 				# Power output from the wind turbine in MW
+actions = sm.action_log 						# Actions taken by the agent
+rel_wind = sm.rel_wind_heading_log 				# Estimated direction of the wind in the wind turbine frame
+true_rel_wind = sm.true_rel_wind_heading_log 	# True direction of the wind in the wind turbien frame
 
 # Plot the result
 ax1 = plt.subplot(311)

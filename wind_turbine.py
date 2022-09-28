@@ -9,38 +9,53 @@
 
 import numpy as np
 from math_utils import wrap_to_m180_p180
+from butterworth_low_pass_filter_template import butter_lowpass, manual_filter
+from scipy.signal import lfilter_zi
+from queue import Queue
 
 class Wind_turbine:
+	# Mechanical Data
 	name = 'V80/2000'
 	manufacturer = 'Vestas'
-	rated_power = 2 							# MW
-	rotor_diameter = 80 						# m 
+	rated_power = 2 											# MW
+	rotor_diameter = 80 										# m 
 	nb_blades = 3
 	power_control = 'pitch'
-	min_rotor_speed = 9 						# rd/min
-	max_rotor_speed = 19 						# rd/min
-	cut_in_wind_speed = 3.5 					# m/s
-	cut_off_wind_speed = 25 					# m/s
-	min_hub_height = 60 						# m
-	max_hub_height = 100 						# m
+	min_rotor_speed = 9 										# rd/min
+	max_rotor_speed = 19 										# rd/min
+	cut_in_wind_speed = 3.5 									# m/s
+	cut_off_wind_speed = 25 									# m/s
+	min_hub_height = 60 										# m
+	max_hub_height = 100 										# m
 	# other public details here : https://www.thewindpower.net/turbine_en_30_vestas_v80-2000.php
 
+	# Control data
 	__power_curve = [[0, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5,  5., 5.5,  6., 6.5,  7., 7.5,  8., 8.5,  9.,  9.5, 10. , 10.5, 11. , 11.5, 12. , 12.5, 13. , 13.5, 14. , 14.5, 15. , 15.5, 16. , 16.5, 17. , 17.5, 18. , 18.5, 19. , 19.5, 20. , 20.5, 21. , 21.5, 22. , 22.5, 23. , 23.5, 24. , 24.5, 25. ], \
 					 [0,   0, 0,    0,  0,   0,  0,  35, 70, 117, 165, 225, 285, 372, 459, 580, 701, 832, 964, 1127, 1289, 1428, 1567, 1678, 1788, 1865, 1941, 1966, 1990, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000]]
-	__yaw_cut_off = 40 							# deg, the maximum yaw relative to the wind that the structure can handle
-	__yaw_control_step = 1 						# deg
-	__yaw_control_cost = 1e-2 * rated_power 	# MW
+	__yaw_cut_off = 40 											# deg, the maximum yaw relative to the wind that the structure can handle
+	__yaw_control_step = 1 										# deg
+	__yaw_control_cost = 1e-2 * rated_power 					# MW
 	__control_on = False
 
-	def __init__(self, initial_heading=None):
+	# Dynamics data
+	__rotor_cutoff = 1/60										# Hz
+	__filter_order = 1
+	__b, __a = butter_lowpass(__rotor_cutoff, 1.0, __filter_order)
+	__zi = lfilter_zi(__b, __a)
+	__power_hist_filt = []  				# MW
+	__power_hist = []  					# MW
+
+	def __init__(self, initial_heading=None, has_inertia=None):
 		''' 
 		Inputs :
 			heading 		- [deg] The wind angle wrt Northin degree
+			has_inertia 	- [bool] Determines whether the output power will be filtered
 
 		Outputs :
 			power_output 	- [MW]
 		'''
 		self._heading = 0 if initial_heading is None else initial_heading
+		self._has_inertia = False if has_inertia is None else has_inertia
 
 	def __power_output(self, wind_speed:float, wind_heading:float) -> float :
 		'''
@@ -50,10 +65,29 @@ class Wind_turbine:
 		wraped_wt_heading = wrap_to_m180_p180(self._heading)
 		wraped_wind_heading = wrap_to_m180_p180(wind_heading)
 		rel_wind_angle = wraped_wind_heading - wraped_wt_heading
+		# Get power output without filtering
 		if np.abs(rel_wind_angle) > self.__yaw_cut_off:
-			return 0
+			power_output = 0
 		else:
-			return np.cos(rel_wind_angle * np.pi/180) * facing_wind_power_output
+			power_output = np.cos(rel_wind_angle * np.pi/180) * facing_wind_power_output
+
+		# If filtering is enabled, process to low-pass filter
+		if self._has_inertia:
+			# Initialize the filter
+			if len(self.__power_hist_filt) <= self.__filter_order:
+				self.__power_hist.append(power_output)
+				self.__power_hist_filt = len(self.__power_hist) * [np.mean(self.__power_hist)]
+			# Filter
+			else:
+				self.__power_hist.pop(0)
+				self.__power_hist.append(power_output)
+				power_hist_filt = manual_filter(self.__b, self.__a, \
+					self.__power_hist, self.__power_hist_filt[1:])
+				self.__power_hist_filt.pop(0)
+				self.__power_hist_filt.append(power_hist_filt[-1])
+			return self.__power_hist_filt[-1]
+		else:
+			return power_output
 
 	def __rotate(self, direction):
 		if direction == -1 :

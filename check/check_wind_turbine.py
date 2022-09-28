@@ -46,3 +46,17 @@ for s in steps:
 plt.plot(power_output)
 plt.grid()
 plt.show()
+
+wt1 = Wind_turbine(0, False)
+wt2 = Wind_turbine(0, True)
+wind_heading = np.linspace(0, 360, int(361))
+power_output_1 = []
+power_output_2 = []
+for wh in wind_heading:
+	power_output_1.append(wt1.step(10, wh, 1))
+	power_output_2.append(wt2.step(10, wh, 1))
+plt.plot(wind_heading, power_output_1, label='not filtered')
+plt.plot(wind_heading, power_output_2, label='filtered')
+plt.legend()
+plt.grid()
+plt.show()

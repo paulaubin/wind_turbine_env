@@ -32,6 +32,13 @@ def manual_filter(b, a, input, init=[]):
 
     Output:
     y -- the filtered values of input
+
+    ex : 
+    x.pop(0)
+    x.append(update_x())
+    yf = manual_filter(b, a, x, y[1:]) to calculate x filtered with lists of size order + 1
+    y.pop(0)
+    y.append(yf[-1])
     """
     order = len(a)
     y = np.array(np.zeros(len(input)))

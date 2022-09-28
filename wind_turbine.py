@@ -85,10 +85,7 @@ class Wind_turbine:
 
 	@property
 	def heading(self):
-		if self._speed < 0:
-			return np.mod(self._heading + 180, 360)
-		else:
-			return np.mod(self._heading, 360)
+		return np.mod(self._heading, 360)
 
 	def __str__(self):
 		return str(self.__class__) + ": " + str(self.__dict__)

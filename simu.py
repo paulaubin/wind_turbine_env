@@ -11,7 +11,8 @@ from math_utils import wrap_to_m180_p180
 from wind_turbine import Wind_turbine, Wind
 
 class Basic_agent:
-	__threshold = 5 		# deg
+	__threshold = 5 					# deg, corresponds to the wind deadzone in which no action is taken
+	__heading_sensor_offset = -3		# deg, it corresponds to the bias of the anemometer
 
 	def __init__(self):
 		pass
@@ -22,7 +23,7 @@ class Basic_agent:
 		Input  : relative wind heading between the wind and the wind turbine.
 		Ouptut : an int corresponding to the selected action : 0 rotate clockwise, 1 do nothgin, 2 rotate trigo
 		'''
-		rel_wind_heading = wrap_to_m180_p180(rel_wind_heading)
+		rel_wind_heading = wrap_to_m180_p180(rel_wind_heading + self.__heading_sensor_offset)
 		# If the relative angle to the wind is low do nothing
 		if np.abs(rel_wind_heading) - self.__threshold < 0:
 			return 1

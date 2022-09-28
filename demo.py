@@ -41,7 +41,7 @@ ax2 = plt.subplot(312, sharex=ax1)
 ax2.plot(rel_wind)
 ax2.grid()
 ax2.set_xlabel('Steps')
-ax2.set_ylabel('Relative wind (°)')
+ax2.set_ylabel('Relative wind without sensor error(°)')
 ax2.set_ylim((-50, 50))
 
 ax3 = plt.subplot(313, sharex=ax1)

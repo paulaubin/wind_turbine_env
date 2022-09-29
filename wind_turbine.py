@@ -71,7 +71,7 @@ class Wind_turbine:
 		if np.abs(rel_wind_angle) > self.__yaw_cut_off:
 			power_output = 0
 		else:
-			power_output = np.cos(rel_wind_angle * np.pi/180) * facing_wind_power_output
+			power_output = np.max([np.cos(rel_wind_angle * np.pi/180) * facing_wind_power_output, 0])
 
 		# If filtering is enabled, process to low-pass filter
 		if self._has_inertia:
@@ -145,6 +145,8 @@ class Wind:
 	__diurnal_period = 24*3600 		# s, represents the period of the diurnal cycle
 	__diurnal_factor = 0.2 			# represents the wind speed elliptical coefficient on a diurnal cycle
 	__time = 0 						# s, represent the elapsed time in s due to the cumulative steps
+	__revolution = 0 				# represents the number of revolutions
+	__unwrap_threshold = 180 		# deg, is the threshold used to unwrap the wind angle
 
 	def __init__(self, initial_speed=None, initial_heading=None, step_duration=None, time_of_the_day=None, model_type='OU'):
 		''' 
@@ -224,15 +226,23 @@ class Wind:
 		x = (1 - u**2)/(1 + u**2)
 		y = self.__diurnal_factor * (2*u) / (1 + u**2)
 		self.__speed_target = np.sqrt(x**2 + y**2) * self.__speed_init
-		self.__heading_target = np.mod(np.arctan2(y, x) * 180/np.pi, 360) + self.__heading_init
-		
+		# unwrap heading target
+		prev_heading_target = self.__heading_target - self.__revolution * 360
+		heading_target = np.arctan2(y, x) * 180/np.pi + self.__heading_init
+		self.__heading_target = self.__unwrap_360(prev_heading_target, heading_target)
 
+	def __unwrap_360(self, prev_value:float, value:float) -> float:
+		if np.abs(value - prev_value) > self.__unwrap_threshold:
+			self.__revolution -= np.sign(value - prev_value)
+		return value + self.__revolution * 360
+		
 	@property
 	def heading(self):
 		if self._speed < 0:
 			return np.mod(self._heading + 180, 360)
 		else:
 			return np.mod(self._heading, 360)
+
 	@property
 	def speed(self):
 		return np.abs(self._speed)

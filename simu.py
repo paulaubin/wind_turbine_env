@@ -38,6 +38,7 @@ class Simu:
 	action_log = []
 	rel_wind_heading_log = []		# deg
 	true_rel_wind_heading_log = [] 	# deg
+	wd_heading_log = [] 			# deg
 	step_count = 0
 
 	def __init__(self, agent=None, wind_model=None, wind_turbine_model=None, max_steps=None):
@@ -49,6 +50,7 @@ class Simu:
 		self.action_log = self.max_steps * [1]
 		self.rel_wind_heading_log = self.max_steps * [0]
 		self.true_rel_wind_heading_log = self.max_steps * [0]
+		self.wd_heading_log = self.max_steps * [0]
 
 	def step(self):
 		# Log the estimated wind
@@ -56,10 +58,7 @@ class Simu:
 
 		# Log the true wind
 		self.true_rel_wind_heading_log[self.step_count] = wrap_to_m180_p180(self.wd.heading - self.wt.true_heading)
-		if np.abs(self.true_rel_wind_heading_log[self.step_count]) > 10:
-			print('self.true_rel_wind_heading_log[self.step_count]) = ', self.true_rel_wind_heading_log[self.step_count])
-			print('self.wd.heading = ', self.wd.heading)
-			print('self.wt.true_heading = ', self.wt.true_heading)
+		self.wd_heading_log[self.step_count] = self.wd.heading
 
 		# Get action
 		self.action_log[self.step_count] = self.agent.policy(self.rel_wind_heading_log[self.step_count])

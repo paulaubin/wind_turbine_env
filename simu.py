@@ -52,6 +52,14 @@ class Simu:
 		self.true_rel_wind_heading_log = self.max_steps * [0]
 		self.wd_heading_log = self.max_steps * [0]
 
+	def reset(self):
+		self.step_count = 0
+		self.power_output_log = self.max_steps * [0]
+		self.action_log = self.max_steps * [1]
+		self.rel_wind_heading_log = self.max_steps * [0]
+		self.true_rel_wind_heading_log = self.max_steps * [0]
+		self.wd_heading_log = self.max_steps * [0]
+
 	def step(self):
 		# Log the estimated wind
 		self.rel_wind_heading_log[self.step_count] = wrap_to_m180_p180(self.wd.heading - self.wt.heading)

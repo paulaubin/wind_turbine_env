@@ -33,6 +33,22 @@ class Basic_agent:
 	def __str__(self):
 		return str(self.__class__) + ": " + str(self.__dict__)
 
+
+class Random_agent:
+	def __init__(self):
+		pass
+
+	def policy(self) -> int:
+		'''
+		Define the policy of the agent, as a random agent it selects a random action given a uniform probability distribution
+		Ouptut : an int corresponding to the selected action : 0 rotate clockwise, 1 do nothgin, 2 rotate trigo
+		'''
+		return np.random.choice([0, 1, 2])
+
+	def __str__(self):
+		return str(self.__class__) + ": " + str(self.__dict__)
+
+
 class Simu:
 	power_output_log = [] 			# MW
 	action_log = []

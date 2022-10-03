@@ -165,7 +165,7 @@ class Wind:
 		'''
 		self._speed = 0 if initial_speed is None else initial_speed
 		self._heading = 0 if initial_heading is None else initial_heading
-		self.__step_duration = self.__dt if step_duration is None else step_duration
+		self.step_duration = 1 if step_duration is None else step_duration
 		self.model_type = model_type
 
 		# Initialise hidden variables. The heading and speed target corresponds to the
@@ -180,28 +180,12 @@ class Wind:
 		step_duration must be an int
 		'''
 		# Increment time and compute long term speed and heading duration
-		self.__time += self.__step_duration
+		self.__time += self.step_duration
 		self.__diurnal_cycle()
 
 		# Compute short term variations
 		if self.model == 'OU':
-			mean_sp = self._speed
-			mean_hd = self._heading
-			steps = 1
-			for i in range(int(np.ceil(self.__step_duration))):
-				# Compute fast chaning wind at 1/dt frequency, typically 1Hz
-				self.__ou()
-				steps += 1
-				mean_sp += (self._speed - mean_sp)/steps
-				mean_hd += (self._heading - mean_hd)/steps
-				if i % self.__step_duration == 1:
-					# Flush new value
-					self._speed = mean_sp
-					self._heading = mean_hd
-					# Reset incremental mean
-					mean_sp = self._speed
-					mean_hd = self._heading
-					steps = 1
+			self.__ou()
 		else:
 			print('Wind model not found in class ', str(self.__class__))
 
@@ -210,13 +194,17 @@ class Wind:
 		This is the Ornstein-Uhlenbeck process, a stationary Gauss-Markov model,
 		a math definition is available at page 7 here : https://www.merl.com/publications/docs/TR2022-102.pdf
 		'''
-		c_speed = self.__c_speed_factor * self.__speed_target
 		# The random distribution variance is chosen such that wind gust can reach 40% of the average wind. Support for random walk and normal distribution
 		# is available here : https://en.wikipedia.org/wiki/Random_walk#:~:text=A%20random%20walk%20having%20a,walk%20as%20an%20underlying%20assumption
-		self._speed = c_speed + (1 - self.__c_speed_factor) * self._speed + np.random.normal(0.0, self.__speed_noise * np.abs(self.__speed_target))
+		n_step_speed_factor = (1 - np.power((1 - self.__c_speed_factor), self.step_duration)) / self.__c_speed_factor
+		c_speed = n_step_speed_factor * self.__c_speed_factor * self.__speed_target
+		self._speed = c_speed + np.power(1 - self.__c_speed_factor, self.step_duration) * self._speed \
+			+ np.random.normal(0.0, np.sqrt(n_step_speed_factor) * self.__speed_noise * np.abs(self.__speed_target))
 
-		c_heading = self.__c_heading_factor * self.__heading_target
-		self._heading = c_heading + (1 - self.__c_heading_factor) * self._heading + np.random.normal(0.0, self.__heading_noise)
+		n_step_heading_factor = (1 - np.power((1 - self.__c_heading_factor), self.step_duration)) / self.__c_heading_factor
+		c_heading = n_step_heading_factor * self.__c_heading_factor * self.__heading_target
+		self._heading = c_heading + np.power(1 - self.__c_heading_factor, self.step_duration) * self._heading \
+			+ np.random.normal(0.0, np.sqrt(n_step_heading_factor) * self.__heading_noise)
 
 	def __diurnal_cycle(self):
 		'''

@@ -11,8 +11,8 @@ from simu import Basic_agent, Simu
 import matplotlib.pyplot as plt
 
 # Initialize a wind instance with 10m/s speed, at 270° from the North, 1s time step,
-# at 8AM in the morning and with the Ornstein-Uhlenbeck model
-wd = Wind(10, 270, 1, 8*3600, 'OU')
+# and with the Ornstein-Uhlenbeck model
+wd = Wind(10, 270, 1, 'OU')
 
 # Initialize a wind turbine instance at 350° of heading angle with inertia enabled
 wt = Wind_turbine(350, True)

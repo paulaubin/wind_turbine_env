@@ -10,8 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from wind_turbine import Wind
 
-w1 = Wind(10, 0, 1, 0,  'OU')
-w2 = Wind(10, 0, 10, 6*3600, 'OU')
+w1 = Wind(10, 270, 1,  'OU')
+w2 = Wind(10, 0, 10, 'OU')
 
 time1 = np.linspace(0, 24*3600, 24*3601)
 w1_sp_log = np.zeros((np.size(time1), 1))

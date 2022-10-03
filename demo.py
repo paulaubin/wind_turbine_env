@@ -7,7 +7,7 @@
 """ Demo to run an agent on the wind turbine environment """
 # ---------------------------------------------------------------------------
 from wind_turbine import Wind_turbine, Wind
-from simu import Basic_agent, Simu
+from simu import Random_agent, Basic_agent, Simu
 import matplotlib.pyplot as plt
 import numpy as np
 

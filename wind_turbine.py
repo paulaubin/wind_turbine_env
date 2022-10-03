@@ -154,7 +154,7 @@ class Wind:
 	__unwrap_threshold = 180 		# deg, is the threshold used to unwrap the wind angle
 	__dt = 1 						# s, represents the time step
 
-	def __init__(self, initial_speed=None, initial_heading=None, step_duration=None, time_of_the_day=None, model_type='OU'):
+	def __init__(self, initial_speed=None, initial_heading=None, step_duration=None, model_type='OU'):
 		''' 
 		Inputs :
 			heading 		- [deg] The wind angle wrt Northin degree
@@ -171,8 +171,7 @@ class Wind:
 		'''
 		self._speed = 0 if initial_speed is None else initial_speed
 		self._heading = 0 if initial_heading is None else initial_heading
-		self.__step_duration = self.__dt if step_duration is None else step_duration
-		self.__time = 0 if time_of_the_day is None else time_of_the_day
+		self.step_duration = self.__dt if step_duration is None else step_duration
 		self.model_type = model_type
 
 		# Initialise hidden variables. The heading and speed target corresponds to the
@@ -180,13 +179,14 @@ class Wind:
 		# process accounts for fast variations such as gusts
 		self.__speed_init = self._speed
 		self.__heading_init = self._heading
+		self.__heading_target = self.__heading_init
 
 	def step(self):
 		'''
 		step_duration must be an int
 		'''
 		# Increment time and compute long term speed and heading duration
-		self.__time += self.__step_duration
+		self.__time += self.step_duration
 		self.__diurnal_cycle()
 
 		# Compute short term variations
@@ -194,13 +194,13 @@ class Wind:
 			mean_sp = self._speed
 			mean_hd = self._heading
 			steps = 1
-			for i in range(int(np.ceil(self.__step_duration))):
+			for i in range(int(np.ceil(self.step_duration))):
 				# Compute fast chaning wind at 1/dt frequency, typically 1Hz
 				self.__ou()
 				steps += 1
 				mean_sp += (self._speed - mean_sp)/steps
 				mean_hd += (self._heading - mean_hd)/steps
-				if i % self.__step_duration == 1:
+				if i % self.step_duration == 1:
 					# Flush new value
 					self._speed = mean_sp
 					self._heading = mean_hd

@@ -10,6 +10,7 @@ import numpy as np
 from math_utils import wrap_to_m180_p180
 from wind_turbine import Wind_turbine, Wind
 
+
 class Basic_agent:
 	__threshold = 5 					# deg, corresponds to the wind deadzone in which no action is taken
 
@@ -33,6 +34,34 @@ class Basic_agent:
 	def __str__(self):
 		return str(self.__class__) + ": " + str(self.__dict__)
 
+
+class Random_agent:
+	def __init__(self):
+		pass
+
+	def policy(self, rel_wind_heading) -> int:
+		'''
+		Define the policy of the agent, as a random agent it selects a random action given a uniform probability distribution
+		Ouptut : an int corresponding to the selected action : 0 rotate clockwise, 1 do nothgin, 2 rotate trigo
+		'''
+		return np.random.choice([0, 1, 2])
+
+	def __str__(self):
+		return str(self.__class__) + ": " + str(self.__dict__)
+
+
+# An agent to be completed
+class Custom_agent:
+	def __init__(self):
+		pass
+
+	def policy(self, rel_wind_heading) -> int:
+		pass
+
+	def __str__(self):
+		return str(self.__class__) + ": " + str(self.__dict__)
+
+
 class Simu:
 	power_output_log = [] 			# MW
 	action_log = []
@@ -44,7 +73,7 @@ class Simu:
 	def __init__(self, agent=None, wind_model=None, wind_turbine_model=None, max_steps=None):
 		self.wd = Wind(10, 0, 1, 0, 'OU') if wind_model is None else wind_model
 		self.wt = Wind_turbine(0, True) if wind_turbine_model is None else wind_turbine_model
-		self.agent = Basic_agent()
+		self.agent = Basic_agent() if agent is None else agent
 		self.max_steps = 24*3600 if max_steps is None else max_steps 
 		self.power_output_log = self.max_steps * [0]
 		self.action_log = self.max_steps * [1]

@@ -7,12 +7,13 @@
 """ Demo to run an agent on the wind turbine environment """
 # ---------------------------------------------------------------------------
 from wind_turbine import Wind_turbine, Wind
-from simu import Basic_agent, Simu
+from simu import Random_agent, Basic_agent, Simu
 import matplotlib.pyplot as plt
+import numpy as np
 
-# Initialize a wind instance with 10m/s speed, at 270° from the North, 1s time step,
-# at 8AM in the morning and with the Ornstein-Uhlenbeck model
-wd = Wind(10, 270, 1, 8*3600, 'OU')
+# Initialize a wind instance with 10m/s speed, at 270° from the North, 1min time step,
+# and with the Ornstein-Uhlenbeck model
+wd = Wind(10, 270, 60, 'OU')
 
 # Initialize a wind turbine instance at 350° of heading angle with inertia enabled
 wt = Wind_turbine(350, True)
@@ -21,7 +22,7 @@ wt = Wind_turbine(350, True)
 ba = Basic_agent()
 
 # Set up a simulation that runs for 1 day
-sm = Simu(ba, wd, wt, 24*3600)
+sm = Simu(ba, wd, wt, int(np.ceil(24*3600 / wd.step_duration)))
 
 # Run the simulation
 sm.run_simu()

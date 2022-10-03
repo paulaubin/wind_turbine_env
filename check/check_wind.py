@@ -10,10 +10,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from wind_turbine import Wind
 
-w1 = Wind(10, 0, 1, 0,  'OU')
-w2 = Wind(10, 0, 10, 6*3600, 'OU')
 
-time1 = np.linspace(0, 24*3600, 24*3601)
+w1_step_size = 1
+w2_step_size = 60
+duration = 24*3600
+
+w1 = Wind(10, 270, w1_step_size,  'OU')
+w2 = Wind(10, 270, w2_step_size, 'OU')
+
+time1 = np.linspace(0, duration, duration+1)
 w1_sp_log = np.zeros((np.size(time1), 1))
 w1_h_log = np.zeros((np.size(time1), 1))
 for t in range(len(time1)) :
@@ -21,7 +26,7 @@ for t in range(len(time1)) :
 	w1_h_log[t] = w1.heading
 	w1.step()
 
-time2 = np.linspace(0, 24*3600, 24*361)
+time2 = np.linspace(0, duration, int(duration/w2_step_size)+1)
 w2_sp_log = np.zeros((np.size(time2), 1))
 w2_h_log = np.zeros((np.size(time2), 1))
 for t in range(len(time2)) :

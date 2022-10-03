@@ -11,7 +11,7 @@ from simu import Random_agent, Basic_agent, Simu
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Initialize a wind instance with 10m/s speed, at 270° from the North, 1s time step,
+# Initialize a wind instance with 10m/s speed, at 270° from the North, 1min time step,
 # and with the Ornstein-Uhlenbeck model
 wd = Wind(10, 270, 60, 'OU')
 

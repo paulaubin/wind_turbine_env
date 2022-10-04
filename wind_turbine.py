@@ -163,8 +163,8 @@ class Wind:
 			time_of_the_day - [s]	For instance 7H30AM is 7*3600 + 30*60. By default it is set to midnight
 			model_type		- [] 	The model used to simulate the wind, the 'OU'
 									model is the one selected by default and corresponds to the 
-									Ornstein-Uhlenbeck model
-
+									Ornstein-Uhlenbeck model. It could be better represented by the Kailman,
+									or the Mann model as described here : https://wes.copernicus.org/preprints/wes-2021-51/wes-2021-51.pdf 
 		Outputs :
 			heading 		- [deg]
 			speed 			- [m/s]

@@ -63,6 +63,7 @@ class Wind_turbine:
 		'''
 		The output power of the wind turbine in MW
 		'''
+		# Linear interpolation of the given power curve to get the power output (output in MW)
 		facing_wind_power_output = np.interp(wind_speed, self.__power_curve[0], self.__power_curve[1])/1e3
 		wraped_wt_heading = wrap_to_m180_p180(self._heading)
 		wraped_wind_heading = wrap_to_m180_p180(wind_heading)
@@ -111,7 +112,11 @@ class Wind_turbine:
 		'''
 		Takes an action and then returns the output power
 		Inputs :
+			wind_speed 		- [m/s] The wind speed at the wind turbine
+			wind_heading 	- [deg] The wind heading wrt North in degree
 			actions - {0, 1, 2}, 0 is rotate trigo, 1 is 'do nothing', 2 is rotate clockwise
+		Outputs :
+			power_output 	- [MW]
 		'''
 		self.__rotate(action-1)
 		power_output = self.__power_output(wind_speed, wind_heading)
@@ -147,6 +152,7 @@ class Wind:
 	__time = 0 						# s, represent the elapsed time in s due to the cumulative steps
 	__revolution = 0 				# represents the number of revolutions
 	__unwrap_threshold = 180 		# deg, is the threshold used to unwrap the wind angle
+	__dt = 1 						# s, represents the time step
 
 	def __init__(self, initial_speed=None, initial_heading=None, step_duration=None, model_type='OU'):
 		''' 
@@ -232,6 +238,9 @@ class Wind:
 		self.__heading_target = self.__unwrap_360(prev_heading_target, heading_target)
 
 	def __unwrap_360(self, prev_value:float, value:float) -> float:
+		"""
+		Unwrap the value to the previous value. This is used to avoid discontinuities in the wind angle
+		"""
 		if np.abs(value - prev_value) > self.__unwrap_threshold:
 			self.__revolution -= np.sign(value - prev_value)
 		return value + self.__revolution * 360

@@ -71,8 +71,8 @@ class Simu:
 	step_count = 0
 
 	def __init__(self, agent=None, wind_model=None, wind_turbine_model=None, max_steps=None):
-		self.wd = Wind(10, 0, 1, 0, 'OU') if wind_model is None else wind_model
-		self.wt = Wind_turbine(0, True) if wind_turbine_model is None else wind_turbine_model
+		self.wd = Wind(10, 0, 1, 'OU') if wind_model is None else wind_model
+		self.wt = Wind_turbine(0, False) if wind_turbine_model is None else wind_turbine_model
 		self.agent = Basic_agent() if agent is None else agent
 		self.max_steps = 24*3600 if max_steps is None else max_steps 
 		self.power_output_log = self.max_steps * [0]
